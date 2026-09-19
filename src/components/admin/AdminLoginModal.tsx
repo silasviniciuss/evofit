@@ -14,8 +14,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onSuccess,
 }) => {
   const { login } = useWorkout();
-  const [email, setEmail] = useState('silasvinicius.dev@gmail.com');
-  const [password, setPassword] = useState('silas123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
@@ -29,7 +29,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       onSuccess();
       onClose();
     } else {
-      setError('Credenciais incorretas. Use silasvinicius.dev@gmail.com / silas123');
+      setError('Credenciais incorretas. Verifique os dados informados.');
     }
   };
 
@@ -66,15 +66,15 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-[#8B98AA] uppercase tracking-wider mb-1.5">
-              E-mail de Acesso
+              Usuário ou E-mail
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-[#8B98AA] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu-email@gmail.com"
+                placeholder="Digite seu usuário ou e-mail"
                 className="w-full bg-[#111B2A] border border-[#1E2B3D] rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder-[#8B98AA] focus:outline-none focus:border-[#1677FF] transition-colors"
                 required
               />
@@ -96,9 +96,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 required
               />
             </div>
-            <p className="text-[10px] text-[#4DA3FF] mt-1.5 font-semibold">
-              Dica rápida: senha padrão de teste é <strong>silas123</strong>
-            </p>
           </div>
 
           <div className="pt-2">

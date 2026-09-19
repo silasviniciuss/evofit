@@ -88,22 +88,23 @@ const STORAGE_KEYS = {
 };
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 1. Auth state - Defaults to Silas Vinícius logged in for seamless immediate experience
+  // 1. Auth state - Unauthenticated by default until user logs in with Silas credentials
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.USER);
-      return saved ? JSON.parse(saved) : INITIAL_USER;
+      return saved ? JSON.parse(saved) : null;
     } catch {
-      return INITIAL_USER;
+      return null;
     }
   });
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ADMIN_MODE);
-      return saved ? JSON.parse(saved) : true;
+      const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      const savedAdmin = localStorage.getItem(STORAGE_KEYS.ADMIN_MODE);
+      return savedUser && savedAdmin ? JSON.parse(savedAdmin) : false;
     } catch {
-      return true;
+      return false;
     }
   });
 
@@ -249,23 +250,44 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [activeSession?.isPaused]);
 
   // Auth operations
-  const login = (email: string) => {
-    // Silas Vinicius personal login
-    const user: User = {
-      id: 'usr-silas-1',
-      name: 'Silas Vinícius',
-      email: email.trim() || 'silasvinicius.dev@gmail.com',
-      role: 'admin',
-      createdAt: new Date().toISOString(),
-    };
-    setCurrentUser(user);
-    setIsAdmin(true);
-    return true;
+  const login = (usernameOrEmail: string, password?: string): boolean => {
+    const userTrimmed = (usernameOrEmail || '').trim().toLowerCase();
+    const passTrimmed = (password || '').trim();
+
+    // Usuário: silas (ou silasvinicius.dev@gmail.com) | Senha: 060333
+    const isUserValid = userTrimmed === 'silas' || userTrimmed === 'silasvinicius.dev@gmail.com';
+    const isPassValid = passTrimmed === '060333';
+
+    if (isUserValid && isPassValid) {
+      const user: User = {
+        id: 'usr-silas-1',
+        name: 'Silas Vinícius',
+        email: 'silasvinicius.dev@gmail.com',
+        role: 'admin',
+        createdAt: new Date().toISOString(),
+      };
+      setCurrentUser(user);
+      setIsAdmin(true);
+      try {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+        localStorage.setItem(STORAGE_KEYS.ADMIN_MODE, JSON.stringify(true));
+      } catch {
+        // Ignore localStorage error if quota or private mode
+      }
+      return true;
+    }
+    return false;
   };
 
   const logout = () => {
     setCurrentUser(null);
     setIsAdmin(false);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.ADMIN_MODE);
+    } catch {
+      // Ignore
+    }
   };
 
   const resetPassword = (_email: string) => {

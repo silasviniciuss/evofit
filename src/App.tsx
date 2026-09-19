@@ -15,11 +15,13 @@ import { WeightChartView } from './components/weight/WeightChartView';
 import { WeightRegisterModal } from './components/weight/WeightRegisterModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminLoginModal } from './components/admin/AdminLoginModal';
+import { LoginView } from './components/auth/LoginView';
 import { formatTimeSeconds } from './utils/formatters';
 import { Play, Clock, Dumbbell, Scale, Plus, Shield } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const {
+    currentUser,
     activeSession,
     startWorkout,
     isAdmin,
@@ -31,6 +33,11 @@ const MainContent: React.FC = () => {
   const [isWeightModalOpen, setIsWeightModalOpen] = useState<boolean>(false);
   const [isActiveWorkoutModalOpen, setIsActiveWorkoutModalOpen] = useState<boolean>(false);
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState<boolean>(false);
+
+  // If user is not logged in, do not show any information or panels!
+  if (!currentUser) {
+    return <LoginView />;
+  }
 
   // Tab change handler with Admin check
   const handleTabChange = (tab: string) => {
