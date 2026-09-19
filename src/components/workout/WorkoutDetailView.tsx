@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   X,
   CheckCircle2,
+  Camera,
+  Video,
 } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Workout, Exercise } from '../../types';
@@ -240,8 +242,13 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
                       {item.exercise.muscleGroup}
                     </span>
                     {item.exercise.equipmentName && (
-                      <span className="text-[10px] text-[#8B98AA] hidden sm:inline">
-                        • {item.exercise.equipmentName}
+                      <span className="text-[10px] text-[#8B98AA] flex items-center gap-1">
+                        • <Camera className="w-3 h-3 text-[#4DA3FF]" /> {item.exercise.equipmentName}
+                      </span>
+                    )}
+                    {item.exercise.videoUrl && (
+                      <span className="text-[10px] text-[#22C55E] flex items-center gap-0.5 hidden xs:flex">
+                        • <Video className="w-3 h-3" /> Vídeo
                       </span>
                     )}
                   </div>

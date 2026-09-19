@@ -19,6 +19,7 @@ import {
   Video,
   RotateCcw,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import {
@@ -866,7 +867,14 @@ const ExerciseEditorModal: React.FC<ExerciseEditorProps> = ({
             <label className="block text-xs font-bold text-[#8B98AA] uppercase mb-1">Aparelho</label>
             <select
               value={equipmentId}
-              onChange={(e) => setEquipmentId(e.target.value)}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setEquipmentId(newId);
+                const selected = equipmentList.find((eq) => eq.id === newId);
+                if (selected?.videoUrl && !videoUrl) {
+                  setVideoUrl(selected.videoUrl);
+                }
+              }}
               className="w-full bg-[#111B2A] border border-[#1E2B3D] rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none"
             >
               <option value="">Nenhum / Peso Corporal</option>
@@ -876,8 +884,65 @@ const ExerciseEditorModal: React.FC<ExerciseEditorProps> = ({
             </select>
           </div>
 
+          {/* PREVIEW: Foto e Dados do Aparelho Selecionado */}
+          {(() => {
+            const selectedEq = equipmentList.find((eq) => eq.id === equipmentId);
+            if (!selectedEq) return null;
+
+            return (
+              <div className="p-3 bg-[#1677FF]/10 border border-[#1677FF]/30 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-[#4DA3FF] flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-[#1677FF]" />
+                    Foto do Aparelho Vinculado
+                  </span>
+                  <span className="text-[10px] text-[#8B98AA] bg-[#0D1420] px-2 py-0.5 rounded border border-[#1E2B3D]">
+                    {selectedEq.location}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedEq.imageUrl}
+                    alt={selectedEq.name}
+                    className="w-16 h-14 object-cover rounded-xl border border-[#1E2B3D] shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-white truncate">{selectedEq.name}</p>
+                    {selectedEq.notes && (
+                      <p className="text-[10px] text-[#8B98AA] line-clamp-1">{selectedEq.notes}</p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl(selectedEq.imageUrl)}
+                        className="text-[10px] font-bold text-[#4DA3FF] hover:underline flex items-center gap-1 cursor-pointer"
+                        title="Usar esta foto no exercício"
+                      >
+                        📸 Usar Foto no Exercício
+                      </button>
+
+                      {selectedEq.videoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setVideoUrl(selectedEq.videoUrl!)}
+                          className="text-[10px] font-bold text-[#22C55E] hover:underline flex items-center gap-1 cursor-pointer"
+                          title="Interligar vídeo do aparelho neste exercício"
+                        >
+                          🔗 Interligar Vídeo do Aparelho
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           <div>
-            <label className="block text-xs font-bold text-[#8B98AA] uppercase mb-1">Foto URL / Pré-visualização</label>
+            <label className="block text-xs font-bold text-[#8B98AA] uppercase mb-1">Foto URL do Exercício / Execução</label>
             <input
               type="text"
               value={imageUrl}
@@ -896,7 +961,26 @@ const ExerciseEditorModal: React.FC<ExerciseEditorProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#8B98AA] uppercase mb-1">Vídeo URL (YouTube ou Link)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-[#8B98AA] uppercase">
+                Vídeo URL (YouTube ou Link Interligado)
+              </label>
+              {(() => {
+                const selectedEq = equipmentList.find((eq) => eq.id === equipmentId);
+                if (selectedEq?.videoUrl && videoUrl !== selectedEq.videoUrl) {
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setVideoUrl(selectedEq.videoUrl!)}
+                      className="text-[10px] font-black text-[#1677FF] hover:text-[#4DA3FF] flex items-center gap-1 cursor-pointer"
+                    >
+                      🔗 Puxar Vídeo do Aparelho
+                    </button>
+                  );
+                }
+                return null;
+              })()}
+            </div>
             <input
               type="text"
               value={videoUrl}
@@ -904,6 +988,23 @@ const ExerciseEditorModal: React.FC<ExerciseEditorProps> = ({
               placeholder="https://www.youtube.com/watch?v=..."
               className="w-full bg-[#111B2A] border border-[#1E2B3D] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#1677FF]"
             />
+            {videoUrl ? (
+              <p className="text-[10px] text-[#22C55E] mt-1 flex items-center gap-1 font-semibold">
+                <CheckCircle2 className="w-3 h-3" /> Vídeo interligado ao cadastro do exercício
+              </p>
+            ) : (
+              (() => {
+                const selectedEq = equipmentList.find((eq) => eq.id === equipmentId);
+                if (selectedEq?.videoUrl) {
+                  return (
+                    <p className="text-[10px] text-[#4DA3FF] mt-1 flex items-center gap-1">
+                      💡 O aparelho possui um vídeo cadastrado que será exibido automaticamente.
+                    </p>
+                  );
+                }
+                return null;
+              })()
+            )}
           </div>
 
           <div className="grid grid-cols-4 gap-2">

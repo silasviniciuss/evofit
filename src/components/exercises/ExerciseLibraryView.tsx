@@ -11,6 +11,8 @@ import {
   Clock,
   Layers,
   CheckCircle2,
+  Video,
+  Camera,
 } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Exercise, MuscleGroup, WorkoutLocation, Workout } from '../../types';
@@ -27,7 +29,7 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
   onOpenAdminNewExercise,
   onSelectWorkout,
 }) => {
-  const { exercises, workouts, deleteExercise, deleteWorkout } = useWorkout();
+  const { exercises, workouts, equipment, deleteExercise, deleteWorkout } = useWorkout();
   const [activeTab, setActiveTab] = useState<'exercises' | 'workouts'>('exercises');
   const [selectedMuscle, setSelectedMuscle] = useState<string>('Todos');
   const [selectedLocation, setSelectedLocation] = useState<WorkoutLocation>('Todos');
@@ -213,71 +215,113 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
           {/* Exercise Cards Grid */}
           {filteredExercises.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredExercises.map((exercise) => (
-                <div
-                  key={exercise.id}
-                  onClick={() => setSelectedExercise(exercise)}
-                  className="group bg-[#111B2A] hover:bg-[#15243A] border border-[#1E2B3D] hover:border-[#1677FF]/50 rounded-3xl overflow-hidden cursor-pointer transition-all shadow-sm flex flex-col justify-between"
-                >
-                  {/* Exercise photo header */}
-                  <div className="relative h-44 w-full overflow-hidden bg-[#070B12]">
-                    <img
-                      src={exercise.imageUrl}
-                      alt={exercise.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#111B2A] via-transparent to-black/30" />
+              {filteredExercises.map((exercise) => {
+                const linkedEq = equipment.find(
+                  (eq) =>
+                    eq.id === exercise.equipmentId ||
+                    (exercise.equipmentName && eq.name.toLowerCase() === exercise.equipmentName.toLowerCase())
+                );
+                const hasVideo = !!(exercise.videoUrl || linkedEq?.videoUrl);
 
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-full bg-[#1677FF] text-white text-[10px] font-black uppercase tracking-wider shadow">
-                        {exercise.muscleGroup}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-[#4DA3FF] text-[10px] font-semibold border border-white/10">
-                        {exercise.location}
-                      </span>
+                return (
+                  <div
+                    key={exercise.id}
+                    onClick={() => setSelectedExercise(exercise)}
+                    className="group bg-[#111B2A] hover:bg-[#15243A] border border-[#1E2B3D] hover:border-[#1677FF]/50 rounded-3xl overflow-hidden cursor-pointer transition-all shadow-sm flex flex-col justify-between"
+                  >
+                    {/* Exercise photo header */}
+                    <div className="relative h-44 w-full overflow-hidden bg-[#070B12]">
+                      <img
+                        src={exercise.imageUrl}
+                        alt={exercise.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#111B2A] via-transparent to-black/30" />
+
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-full bg-[#1677FF] text-white text-[10px] font-black uppercase tracking-wider shadow">
+                          {exercise.muscleGroup}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-[#4DA3FF] text-[10px] font-semibold border border-white/10">
+                          {exercise.location}
+                        </span>
+                      </div>
+
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                        {hasVideo && (
+                          <span
+                            className="px-2 py-1 rounded-xl bg-black/65 backdrop-blur-md text-[#4DA3FF] text-[10px] font-black flex items-center gap-1 border border-white/10"
+                            title="Vídeo demonstrativo interligado"
+                          >
+                            <Video className="w-3 h-3 text-[#1677FF]" />
+                            <span className="hidden xs:inline">Vídeo</span>
+                          </span>
+                        )}
+
+                        {/* Quick delete button on top right */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteExercise(exercise);
+                          }}
+                          className="p-2 rounded-xl bg-black/60 backdrop-blur-md hover:bg-[#EF4444] text-[#8B98AA] hover:text-white transition-all border border-white/10"
+                          title="Apagar este exercício"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Quick delete button on top right */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDeleteExercise(exercise);
-                      }}
-                      className="absolute top-3 right-3 p-2 rounded-xl bg-black/60 backdrop-blur-md hover:bg-[#EF4444] text-[#8B98AA] hover:text-white transition-all border border-white/10"
-                      title="Apagar este exercício"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Body */}
+                    <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-base font-black text-white uppercase tracking-wide group-hover:text-[#4DA3FF] transition-colors line-clamp-1">
+                          {exercise.name}
+                        </h3>
+
+                        {/* Linked Equipment Badge & Thumbnail */}
+                        {linkedEq ? (
+                          <div className="flex items-center gap-2 mt-2 p-1.5 rounded-xl bg-[#0D1420] border border-[#1E2B3D]/80">
+                            <img
+                              src={linkedEq.imageUrl}
+                              alt={linkedEq.name}
+                              className="w-7 h-7 rounded-lg object-cover border border-[#1E2B3D] shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-bold text-white truncate">
+                                {linkedEq.name}
+                              </p>
+                              <p className="text-[9px] text-[#4DA3FF] uppercase font-black tracking-wider flex items-center gap-1">
+                                <Camera className="w-2.5 h-2.5" /> Foto do Aparelho
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          exercise.equipmentName && (
+                            <p className="text-xs text-[#8B98AA] line-clamp-1 mt-0.5">
+                              {exercise.equipmentName}
+                            </p>
+                          )
+                        )}
+                      </div>
+
+                      {/* Specs row */}
+                      <div className="pt-2 border-t border-[#1E2B3D] flex items-center justify-between text-xs font-bold text-[#8B98AA]">
+                        <span>
+                          <strong className="text-white">{exercise.defaultSets}</strong> ×{' '}
+                          <strong className="text-white">{exercise.defaultReps}</strong> reps
+                        </span>
+                        <span>
+                          {exercise.defaultWeight > 0 ? `${exercise.defaultWeight} kg` : 'Corporal'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Body */}
-                  <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-wide group-hover:text-[#4DA3FF] transition-colors line-clamp-1">
-                        {exercise.name}
-                      </h3>
-                      {exercise.equipmentName && (
-                        <p className="text-xs text-[#8B98AA] line-clamp-1 mt-0.5">
-                          {exercise.equipmentName}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Specs row */}
-                    <div className="pt-2 border-t border-[#1E2B3D] flex items-center justify-between text-xs font-bold text-[#8B98AA]">
-                      <span>
-                        <strong className="text-white">{exercise.defaultSets}</strong> ×{' '}
-                        <strong className="text-white">{exercise.defaultReps}</strong> reps
-                      </span>
-                      <span>
-                        {exercise.defaultWeight > 0 ? `${exercise.defaultWeight} kg` : 'Corporal'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-12 text-center text-[#8B98AA] bg-[#111B2A] rounded-3xl border border-[#1E2B3D]">
