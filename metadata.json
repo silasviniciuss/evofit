@@ -1,0 +1,6 @@
+{
+  "name": "SILAS VINÍCIUS — MEU TREINO",
+  "description": "Sistema pessoal de treino e acompanhamento físico exclusivo para Silas Vinícius com rotinas diárias, cronômetros, monitoramento de peso e painel administrativo.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
