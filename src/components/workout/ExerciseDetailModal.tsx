@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { X, Play, Clock, Dumbbell, Repeat, Shield, ExternalLink, Video } from 'lucide-react';
+import { X, Play, Clock, Dumbbell, Repeat, Shield, ExternalLink, Video, Trash2, AlertTriangle } from 'lucide-react';
 import { Exercise } from '../../types';
+import { useWorkout } from '../../context/WorkoutContext';
 
 interface ExerciseDetailModalProps {
   exercise: Exercise | null;
   isOpen: boolean;
   onClose: () => void;
   onStartExercise?: (exercise: Exercise) => void;
+  onDeleteExercise?: (exerciseId: string) => void;
 }
 
 export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
@@ -14,10 +16,23 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
   isOpen,
   onClose,
   onStartExercise,
+  onDeleteExercise,
 }) => {
+  const { deleteExercise } = useWorkout();
   const [showVideo, setShowVideo] = useState<boolean>(false);
+  const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
   if (!isOpen || !exercise) return null;
+
+  const handleDeleteConfirmed = () => {
+    if (onDeleteExercise) {
+      onDeleteExercise(exercise.id);
+    } else {
+      deleteExercise(exercise.id);
+    }
+    setConfirmDelete(false);
+    onClose();
+  };
 
   // Check if youtube video url
   const getEmbedUrl = (url?: string) => {
@@ -188,28 +203,77 @@ export const ExerciseDetailModal: React.FC<ExerciseDetailModalProps> = ({
           )}
 
           {/* Footer actions */}
-          <div className="pt-2 flex items-center gap-3">
+          <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
-              onClick={onClose}
-              className="py-3.5 px-5 rounded-2xl bg-[#111B2A] hover:bg-[#15243A] text-[#8B98AA] hover:text-white font-bold text-sm border border-[#1E2B3D] transition-colors"
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="py-3.5 px-4 rounded-2xl bg-[#EF4444]/15 hover:bg-[#EF4444]/25 text-[#EF4444] font-black text-xs uppercase tracking-wider border border-[#EF4444]/30 hover:border-[#EF4444]/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              title="Apagar este exercício da biblioteca"
             >
-              Fechar
+              <Trash2 className="w-4 h-4" />
+              <span>Apagar Exercício</span>
             </button>
-            {onStartExercise && (
+
+            <div className="flex-1 flex items-center gap-2">
               <button
-                onClick={() => {
-                  onStartExercise(exercise);
-                  onClose();
-                }}
-                className="flex-1 py-3.5 px-5 rounded-2xl bg-[#1677FF] hover:bg-[#0A5BE7] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#1677FF]/30 transition-all"
+                onClick={onClose}
+                className="py-3.5 px-5 rounded-2xl bg-[#111B2A] hover:bg-[#15243A] text-[#8B98AA] hover:text-white font-bold text-sm border border-[#1E2B3D] transition-colors"
               >
-                <Play className="w-4 h-4 fill-current" />
-                Iniciar Exercício
+                Fechar
               </button>
-            )}
+              {onStartExercise && (
+                <button
+                  onClick={() => {
+                    onStartExercise(exercise);
+                    onClose();
+                  }}
+                  className="flex-1 py-3.5 px-5 rounded-2xl bg-[#1677FF] hover:bg-[#0A5BE7] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#1677FF]/30 transition-all cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  Iniciar Exercício
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal to Delete Exercise */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md bg-[#0D1420] border border-[#EF4444]/40 rounded-3xl p-6 sm:p-7 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/20 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-black text-white uppercase tracking-tight">
+              Apagar Exercício da Biblioteca?
+            </h3>
+
+            <p className="text-xs text-[#8B98AA] mt-2 leading-relaxed">
+              Tem certeza que deseja apagar o exercício <strong className="text-white">"{exercise.name}"</strong>? Esta ação removerá o exercício da sua biblioteca.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-2.5 rounded-xl bg-[#111B2A] hover:bg-[#15243A] text-[#8B98AA] hover:text-white font-bold text-xs uppercase tracking-wider border border-[#1E2B3D] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirmed}
+                className="px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-[#EF4444]/30 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                Sim, Apagar Exercício
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

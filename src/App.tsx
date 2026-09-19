@@ -124,6 +124,10 @@ const MainContent: React.FC = () => {
                 setSelectedWorkoutId(undefined);
                 setCurrentTab('workout_today');
               }}
+              onSelectWorkout={(workoutId) => {
+                setSelectedWorkoutId(workoutId);
+                setCurrentTab('workout_today');
+              }}
               onOpenAdminNewExercise={() => {
                 if (isAdmin) {
                   setCurrentTab('admin');

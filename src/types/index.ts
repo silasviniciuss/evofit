@@ -12,7 +12,7 @@ export type MuscleGroup =
 
 export type WorkoutLocation = 'Academia' | 'Casa' | 'Todos';
 
-export type WorkoutType = 'Academia' | 'Casa' | 'Cardio' | 'Outro';
+export type WorkoutType = 'Academia' | 'Casa' | 'Cardio' | 'Descanso' | 'Outro';
 
 export interface User {
   id: string;

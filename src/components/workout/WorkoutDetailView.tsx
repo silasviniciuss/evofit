@@ -9,6 +9,10 @@ import {
   Layers,
   Sparkles,
   ChevronDown,
+  Trash2,
+  AlertTriangle,
+  X,
+  CheckCircle2,
 } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { Workout, Exercise } from '../../types';
@@ -23,7 +27,7 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   selectedWorkoutId,
   onStartWorkout,
 }) => {
-  const { workouts, exercises, activeSession } = useWorkout();
+  const { workouts, exercises, activeSession, deleteWorkout, updateWorkout } = useWorkout();
 
   // Pick selected workout, or fallback to first active / today's workout
   const currentWorkout =
@@ -33,13 +37,53 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
 
   const [activeWorkoutId, setActiveWorkoutId] = useState<string>(currentWorkout?.id || '');
   const [inspectExercise, setInspectExercise] = useState<Exercise | null>(null);
+  const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState<Workout | null>(null);
+  const [confirmRemoveExercise, setConfirmRemoveExercise] = useState<{
+    exerciseItemId: string;
+    exerciseName: string;
+  } | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const displayWorkout = workouts.find((w) => w.id === (selectedWorkoutId || activeWorkoutId)) || currentWorkout;
+  const displayWorkout =
+    workouts.find((w) => w.id === (selectedWorkoutId || activeWorkoutId)) || currentWorkout;
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleDeleteWorkoutConfirmed = () => {
+    if (!confirmDeleteWorkout) return;
+    const deletedName = confirmDeleteWorkout.name;
+    deleteWorkout(confirmDeleteWorkout.id);
+    setConfirmDeleteWorkout(null);
+    showToast(`Treino "${deletedName}" apagado com sucesso!`);
+    const remaining = workouts.filter((w) => w.id !== confirmDeleteWorkout.id && !w.isRestDay);
+    if (remaining.length > 0) {
+      setActiveWorkoutId(remaining[0].id);
+    }
+  };
+
+  const handleRemoveExerciseConfirmed = () => {
+    if (!confirmRemoveExercise || !displayWorkout) return;
+    const updatedExercises = displayWorkout.exercises
+      .filter((ex) => ex.id !== confirmRemoveExercise.exerciseItemId)
+      .map((ex, index) => ({ ...ex, order: index + 1 }));
+
+    updateWorkout({
+      ...displayWorkout,
+      exercises: updatedExercises,
+    });
+    const exName = confirmRemoveExercise.exerciseName;
+    setConfirmRemoveExercise(null);
+    showToast(`Exercício "${exName}" removido do treino.`);
+  };
 
   if (!displayWorkout) {
     return (
-      <div className="p-8 text-center text-[#8B98AA]">
-        Nenhum treino cadastrado no momento.
+      <div className="p-12 text-center text-[#8B98AA] bg-[#111B2A] rounded-3xl border border-[#1E2B3D] space-y-3">
+        <p className="text-base font-bold text-white">Nenhum treino encontrado.</p>
+        <p className="text-xs">Você pode cadastrar ou reativar treinos através do Painel de Administração.</p>
       </div>
     );
   }
@@ -65,7 +109,15 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
   });
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 relative">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-[#0D1420] border border-[#1677FF] shadow-2xl flex items-center gap-3 text-xs font-bold text-white animate-fade-in">
+          <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Workout Selector Switcher */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {workouts
@@ -92,7 +144,7 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full bg-[#1677FF]/20 border border-[#1677FF]/40 text-[#4DA3FF] text-xs font-black uppercase tracking-wider">
                 {displayWorkout.dayName || 'ROTINA'}
               </span>
@@ -125,14 +177,25 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
             </div>
           </div>
 
-          {/* Big Start Workout Button (PRD Section 9 / 14) */}
-          <div className="shrink-0">
+          {/* Actions: Start Workout & Delete Workout */}
+          <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Delete Workout Button */}
+            <button
+              onClick={() => setConfirmDeleteWorkout(displayWorkout)}
+              className="px-4 py-3.5 rounded-2xl bg-[#EF4444]/15 hover:bg-[#EF4444]/25 border border-[#EF4444]/30 hover:border-[#EF4444]/50 text-[#EF4444] font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              title="Apagar este treino adicionado"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>APAGAR TREINO</span>
+            </button>
+
+            {/* Big Start Workout Button (PRD Section 9 / 14) */}
             <button
               onClick={() => onStartWorkout(displayWorkout.id)}
-              className="w-full md:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#0A5BE7] hover:from-[#4DA3FF] hover:to-[#1677FF] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-3 shadow-xl shadow-[#1677FF]/40 hover:scale-105 active:scale-95 transition-all"
+              className="px-7 py-4 rounded-2xl bg-gradient-to-r from-[#1677FF] to-[#0A5BE7] hover:from-[#4DA3FF] hover:to-[#1677FF] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-xl shadow-[#1677FF]/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <Play className="w-5 h-5 fill-current" />
-              INICIAR TREINO
+              <span>INICIAR TREINO</span>
             </button>
           </div>
         </div>
@@ -144,7 +207,7 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
           <h2 className="text-xs font-black text-[#8B98AA] uppercase tracking-wider">
             ORDEM DOS EXERCÍCIOS ({workoutExercises.length})
           </h2>
-          <span className="text-xs text-[#4DA3FF] font-bold">Toque no card para ver detalhes</span>
+          <span className="text-xs text-[#4DA3FF] font-bold">Toque no card para detalhes</span>
         </div>
 
         <div className="space-y-3">
@@ -189,8 +252,8 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
               </div>
 
               {/* Sets x Reps & Weight and Action */}
-              <div className="flex items-center justify-between sm:justify-end gap-5 pl-14 sm:pl-0 border-t sm:border-t-0 border-[#1E2B3D]/50 pt-2 sm:pt-0">
-                <div className="flex items-center gap-4 text-xs font-bold">
+              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-14 sm:pl-0 border-t sm:border-t-0 border-[#1E2B3D]/50 pt-2 sm:pt-0">
+                <div className="flex items-center gap-2 sm:gap-3 text-xs font-bold">
                   <div className="px-3 py-1.5 rounded-xl bg-[#0D1420] border border-[#1E2B3D] text-white">
                     <span className="text-[#8B98AA]">SÉRIES: </span>
                     <span className="text-white font-black">{item.sets} × {item.reps}</span>
@@ -203,8 +266,24 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
                   </div>
                 </div>
 
+                {/* Remove Exercise Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmRemoveExercise({
+                      exerciseItemId: item.id,
+                      exerciseName: item.exercise.name,
+                    });
+                  }}
+                  className="p-2.5 rounded-xl bg-[#0D1420] hover:bg-[#EF4444]/20 border border-[#1E2B3D] hover:border-[#EF4444]/50 text-[#8B98AA] hover:text-[#EF4444] transition-colors"
+                  title="Remover exercício deste treino"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
                 <div className="flex items-center gap-1 text-xs font-extrabold text-[#1677FF] group-hover:translate-x-1 transition-transform">
-                  <span className="hidden md:inline">VER EXERCÍCIO</span>
+                  <span className="hidden md:inline">VER</span>
                   <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 </div>
               </div>
@@ -212,6 +291,84 @@ export const WorkoutDetailView: React.FC<WorkoutDetailViewProps> = ({
           ))}
         </div>
       </div>
+
+      {/* MODAL: Confirm Delete Workout */}
+      {confirmDeleteWorkout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md bg-[#0D1420] border border-[#EF4444]/40 rounded-3xl p-6 sm:p-7 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/20 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-black text-white uppercase tracking-tight">
+              Apagar Treino Adicionado?
+            </h3>
+
+            <p className="text-xs text-[#8B98AA] mt-2 leading-relaxed">
+              Tem certeza que deseja apagar o treino{' '}
+              <strong className="text-white">"{confirmDeleteWorkout.name}"</strong>?
+              Esta ação removerá o treino da sua programação e sua lista de exercícios.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteWorkout(null)}
+                className="px-4 py-2.5 rounded-xl bg-[#111B2A] hover:bg-[#15243A] text-[#8B98AA] hover:text-white font-bold text-xs uppercase tracking-wider border border-[#1E2B3D] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteWorkoutConfirmed}
+                className="px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-[#EF4444]/30 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                Sim, Apagar Treino
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Confirm Remove Exercise from Workout */}
+      {confirmRemoveExercise && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md bg-[#0D1420] border border-[#EF4444]/40 rounded-3xl p-6 sm:p-7 shadow-2xl relative">
+            <div className="w-12 h-12 rounded-2xl bg-[#EF4444]/20 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-black text-white uppercase tracking-tight">
+              Remover Exercício do Treino?
+            </h3>
+
+            <p className="text-xs text-[#8B98AA] mt-2 leading-relaxed">
+              Deseja remover o exercício{' '}
+              <strong className="text-white">"{confirmRemoveExercise.exerciseName}"</strong> deste treino?
+              Ele continuará disponível na sua biblioteca geral de exercícios.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setConfirmRemoveExercise(null)}
+                className="px-4 py-2.5 rounded-xl bg-[#111B2A] hover:bg-[#15243A] text-[#8B98AA] hover:text-white font-bold text-xs uppercase tracking-wider border border-[#1E2B3D] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleRemoveExerciseConfirmed}
+                className="px-5 py-2.5 rounded-xl bg-[#EF4444] hover:bg-[#DC2626] text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-[#EF4444]/30 transition-all cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remover Exercício
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Exercise Detail Modal */}
       {inspectExercise && (

@@ -565,6 +565,20 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteWorkout = useCallback((id: string) => {
     setWorkouts((prev) => prev.filter((w) => w.id !== id));
+    setSchedule((prev) =>
+      prev.map((day) =>
+        day.workoutId === id
+          ? {
+              ...day,
+              workoutId: undefined,
+              workoutName: 'Descanso',
+              isRestDay: true,
+              type: 'Descanso',
+            }
+          : day
+      )
+    );
+    setActiveSession((prev) => (prev && prev.workoutId === id ? null : prev));
   }, []);
 
   const reorderWorkoutExercises = useCallback((workoutId: string, startIndex: number, endIndex: number) => {
